@@ -6,9 +6,7 @@ import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, GLib, GdkPixbuf
 import os
-import pygame as pg
-from mutagen.id3 import ID3
-from mutagen.mp3 import MP3
+import mpv
 
 musics=[]
 i = 0
@@ -16,7 +14,7 @@ c = 0
 
 listbox = Gtk.ListBox()
 
-pg.mixer.init()
+player = mpv.MPV()
 
 win = Gtk.Window()
 win.set_title("Music")
@@ -43,20 +41,15 @@ g = 0
 def play():
     global musics, i, c, playbutton, listbox, g, a
     if c == 0:
-        pg.mixer.quit()
-        samplerate = MP3(musics[i]).info.sample_rate
-        pg.mixer.init(samplerate)
-        pg.mixer_music.load(musics[i])
-        pg.mixer_music.play()
+        player.play(musics[i])
         playbutton.set_image(imgstop)
         c += 1
     elif c%2 == 1:
-        print("pause")
-        pg.mixer_music.pause()
+        player.pause = True
         playbutton.set_image(imgplay)
         c += 1
     elif c%2 == 0:
-        pg.mixer_music.unpause()
+        player.pause = False
         playbutton.set_image(imgstop)
         c += 1
 
@@ -87,14 +80,24 @@ def b1(button):
     play()
 playbutton.connect("clicked", b1)
 
+def get_title(entry):
+    return entry.name
+
+def add_music(entry):
+    musics.append(entry.path)
+    title = get_title(entry)
+    music_label = Gtk.Label(label=title)
+    listbox.add(music_label)
+
+def add_music_from(directory):
+    for entry in os.scandir(directory):
+        if entry.is_dir():
+            add_music_from(entry.path)
+        elif entry.is_file() and entry.path.endswith('.mp3'):
+            add_music(entry)
+
 music_dir = GLib.get_user_special_dir(GLib.UserDirectory.DIRECTORY_MUSIC)
-for file in os.walk(music_dir):
-    for f in file:
-        for f2 in f:
-            if f2.endswith(".mp3"):
-                l1 = Gtk.Label(label=f2)
-                musics.append('{}/{}'.format(music_dir,f2))
-                listbox.add(l1)
+add_music_from(music_dir)
 
 
 grid = Gtk.Grid()
