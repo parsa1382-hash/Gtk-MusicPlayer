@@ -6,7 +6,10 @@ import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, GLib, GdkPixbuf
 import os
-import mpv
+import pygame as pg
+from mutagen.mp3 import MP3
+
+pg.mixer.init()
 
 musics=[]
 i = 0
@@ -14,7 +17,6 @@ c = 0
 
 listbox = Gtk.ListBox()
 
-player = mpv.MPV()
 
 win = Gtk.Window()
 win.set_title("Music")
@@ -41,15 +43,19 @@ g = 0
 def play():
     global musics, i, c, playbutton, listbox, g, a
     if c == 0:
-        player.play(musics[i])
+        pg.mixer.quit()
+        pg.mixer.init(MP3(musics[i%(len(musics))]).info.sample_rate)
+
+        pg.mixer_music.load(musics[i])
+        pg.mixer_music.play()
         playbutton.set_image(imgstop)
         c += 1
     elif c%2 == 1:
-        player.pause = True
+        pg.mixer_music.pause()
         playbutton.set_image(imgplay)
         c += 1
     elif c%2 == 0:
-        player.pause = False
+        pg.mixer_music.unpause()
         playbutton.set_image(imgstop)
         c += 1
 
